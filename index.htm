@@ -74,6 +74,9 @@ button:disabled{opacity:.5;cursor:not-allowed}
       <input type="text" id="cityInput" placeholder="e.g. Snowmass, CO" />
       <button id="goBtn" onclick="go()">Calculate</button>
     </div>
+    <div class="row" style="margin-top:10px">
+      <input type="date" id="dateInput" style="flex:1;background:var(--sand);border:1.5px solid var(--warm);border-radius:10px;padding:11px 15px;font-family:'DM Mono',monospace;font-size:.85rem;color:var(--text);outline:none" />
+    </div>
     <div class="status" id="status"></div>
   </div>
 
@@ -98,12 +101,12 @@ button:disabled{opacity:.5;cursor:not-allowed}
   <div class="card hidden" id="schedCard">
     <div class="clabel">Recommended Exposure</div>
     <div class="rgrid">
-      <div class="rbox"><div class="rbig" id="safeM" style="color:var(--safe)">—</div><div class="rlbl">Safe max today</div></div>
+      <div class="rbox"><div class="rbig" id="safeM" style="color:var(--safe)">—</div><div class="rlbl">Safe max — <span id="safeDateLabel">today</span></div></div>
       <div class="rbox"><div class="rbig" id="burnM" style="color:var(--burn)">—</div><div class="rlbl">Burn threshold</div></div>
     </div>
     <div id="wbox" class="wbox hidden"></div>
     <div class="div"></div>
-    <div class="clabel">Hourly Windows Today</div>
+    <div class="clabel">Hourly Windows — <span id="schedDateLabel">Today</span></div>
     <div class="srows" id="srows"></div>
   </div>
 
@@ -243,24 +246,26 @@ function go(){
   document.getElementById('cityInput').value = curName;
 
   var now = new Date();
-  // Adjust to local standard time for solar calculation
+  // Use selected date if provided, else today
+  var dateVal = document.getElementById('dateInput').value;
+  var selDate = dateVal ? new Date(dateVal + 'T12:00:00') : now;
+  var isToday = !dateVal || dateVal === now.toISOString().split('T')[0];
+
+  // Day of year for selected date
+  var doy = Math.floor((selDate - new Date(selDate.getFullYear(),0,0))/86400000);
+
+  // For solar hour: always use current time-of-day, but selected date's doy
   var utcH = now.getUTCHours() + now.getUTCMinutes()/60;
-  // Use browser's actual UTC offset for accuracy (handles DST automatically)
-  var browserTzOff = -now.getTimezoneOffset() / 60;
-  // If browser and location are in same DST state, use browser offset; else use stored offset
   var localH = utcH + tzOff;
-  // Equation of time correction (longitude)
   var lonCorr = (lon - tzOff*15) / 15;
   var solarH = localH + lonCorr;
 
-  var doy = Math.floor((now - new Date(now.getFullYear(),0,0))/86400000);
-
-  // Current UVI
+  // Current UVI (using today's time but selected date's sun angle)
   curUVI = estimateUVI(lat, elev, doy, solarH);
   curUVI = Math.round(curUVI * 10) / 10;
 
-  // Hourly UVI for 6am–8pm
-  var td = now.toISOString().split('T')[0];
+  // Hourly UVI for 6am–8pm on selected date
+  var td = selDate.toISOString().split('T')[0];
   curTimes=[]; curHourly=[];
   for(var h=6;h<=20;h++){
     var sh = h + lonCorr;
@@ -268,7 +273,13 @@ function go(){
     curTimes.push(td+'T'+(h<10?'0':'')+h+':00');
   }
 
-  var season = ['winter','winter','spring','spring','spring','summer','summer','summer','fall','fall','fall','winter'][now.getMonth()];
+  // Update dynamic labels
+  var monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var dlbl = isToday ? 'Today' : monthNames[selDate.getMonth()]+' '+selDate.getDate();
+  document.getElementById('schedDateLabel').textContent = dlbl;
+  document.getElementById('safeDateLabel').textContent = isToday ? 'today' : dlbl;
+
+  var season = ['winter','winter','spring','spring','spring','summer','summer','summer','fall','fall','fall','winter'][selDate.getMonth()];
   var note = curName+' — '+season+' UV at '+elev+'m elevation'+(elev>1500?' (high altitude — UV significantly elevated)':'');
   setStatus('&#9729; '+note);
   showUV();
@@ -348,6 +359,13 @@ function buildSched(){
 }
 
 function setStatus(msg){document.getElementById('status').innerHTML=msg;}
+// Set date picker to today on load
+(function(){
+  var t=new Date();
+  var y=t.getFullYear(), m=String(t.getMonth()+1).padStart(2,'0'), d=String(t.getDate()).padStart(2,'0');
+  document.getElementById('dateInput').value=y+'-'+m+'-'+d;
+})();
+
 document.getElementById('cityInput').addEventListener('keydown',function(e){if(e.key==='Enter')go();});
 </script>
 
