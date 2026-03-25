@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 
 <html lang="en">
@@ -120,32 +119,32 @@ button:disabled{opacity:.5;cursor:not-allowed}
 // ── Known locations database ──────────────────────────────────────────────
 // lat, lon, elevation(m), timezone offset (standard, hrs from UTC)
 var LOCS = {
-  "snowmass":         [39.208, -106.938, 2473, -7],
-  "aspen":            [39.191, -106.818, 2438, -7],
-  "denver":           [39.739, -104.984,  1609, -7],
-  "colorado springs": [38.833, -104.821, 1839, -7],
-  "boulder":          [40.015, -105.270, 1655, -7],
-  "vail":             [39.643, -106.374, 2476, -7],
-  "telluride":        [37.937, -107.812, 2667, -7],
-  "breckenridge":     [39.482, -106.048, 2926, -7],
-  "new york":         [40.713,  -74.006,    10, -5],
-  "los angeles":      [34.052, -118.244,    86, -8],
-  "chicago":          [41.878,  -87.630,  181, -6],
-  "miami":            [25.774,  -80.194,    2, -5],
+  "snowmass":         [39.208, -106.938, 2473, -6],
+  "aspen":            [39.191, -106.818, 2438, -6],
+  "denver":           [39.739, -104.984,  1609, -6],
+  "colorado springs": [38.833, -104.821, 1839, -6],
+  "boulder":          [40.015, -105.270, 1655, -6],
+  "vail":             [39.643, -106.374, 2476, -6],
+  "telluride":        [37.937, -107.812, 2667, -6],
+  "breckenridge":     [39.482, -106.048, 2926, -6],
+  "new york":         [40.713,  -74.006,    10, -4],
+  "los angeles":      [34.052, -118.244,    86, -7],
+  "chicago":          [41.878,  -87.630,  181, -5],
+  "miami":            [25.774,  -80.194,    2, -4],
   "phoenix":          [33.449, -112.074,  331, -7],
-  "seattle":          [47.606, -122.332,   56, -8],
-  "san francisco":    [37.775, -122.419,   16, -8],
-  "dallas":           [32.777,  -96.797,  139, -6],
-  "atlanta":          [33.749,  -84.388,  320, -5],
-  "boston":           [42.360,  -71.059,    9, -5],
-  "las vegas":        [36.175, -115.136,  620, -8],
-  "salt lake city":   [40.761, -111.891, 1320, -7],
-  "albuquerque":      [35.085, -106.650, 1511, -7],
+  "seattle":          [47.606, -122.332,   56, -7],
+  "san francisco":    [37.775, -122.419,   16, -7],
+  "dallas":           [32.777,  -96.797,  139, -5],
+  "atlanta":          [33.749,  -84.388,  320, -4],
+  "boston":           [42.360,  -71.059,    9, -4],
+  "las vegas":        [36.175, -115.136,  620, -7],
+  "salt lake city":   [40.761, -111.891, 1320, -6],
+  "albuquerque":      [35.085, -106.650, 1511, -6],
   "tucson":           [32.222, -110.926,  728, -7],
-  "portland":         [45.523, -122.676,   15, -8],
-  "minneapolis":      [44.978,  -93.265,  260, -6],
-  "nashville":        [36.166,  -86.784,  182, -6],
-  "new orleans":      [29.951,  -90.072,    1, -6],
+  "portland":         [45.523, -122.676,   15, -7],
+  "minneapolis":      [44.978,  -93.265,  260, -5],
+  "nashville":        [36.166,  -86.784,  182, -5],
+  "new orleans":      [29.951,  -90.072,    1, -5],
   "honolulu":         [21.307, -157.858,    5,-10],
   "anchorage":        [61.218, -149.900,   31, -9],
 };
@@ -246,8 +245,10 @@ function go(){
   var now = new Date();
   // Adjust to local standard time for solar calculation
   var utcH = now.getUTCHours() + now.getUTCMinutes()/60;
-  var localH = utcH + tzOff; // standard time hour
-  if(now.getTimezoneOffset() < -(tzOff*60 - 60)) localH += 1; // crude DST adjust
+  // Use browser's actual UTC offset for accuracy (handles DST automatically)
+  var browserTzOff = -now.getTimezoneOffset() / 60;
+  // If browser and location are in same DST state, use browser offset; else use stored offset
+  var localH = utcH + tzOff;
   // Equation of time correction (longitude)
   var lonCorr = (lon - tzOff*15) / 15;
   var solarH = localH + lonCorr;
@@ -291,20 +292,23 @@ function showUV(){
 }
 
 function safeMin(uvi,sk){
-  if(!sk||uvi<=0)return Infinity;
-  return Math.round((sk.med/(uvi*UVI_DOSE))*sk.sf);
+  if(!sk||uvi<=0)return 0;
+  var raw=Math.round((sk.med/(uvi*UVI_DOSE))*sk.sf);
+  return (raw>0&&raw<5)?5:raw;
 }
 
 function buildSched(){
   if(!skin||curUVI===null)return;
   var safe=safeMin(curUVI,skin);
-  var burn=Math.round(skin.med/((curUVI*UVI_DOSE)||1));
-  document.getElementById('safeM').textContent=safe===Infinity?'\u221e':safe+'m';
-  document.getElementById('burnM').textContent=curUVI<=0?'\u2014':burn+'m';
+  var burnRaw=skin.med/((curUVI*UVI_DOSE)||1);
+  document.getElementById('safeM').textContent=safe===0?'\u2014':safe+'m';
+  document.getElementById('burnM').textContent=curUVI<=0?'\u2014':Math.round(burnRaw)+'m';
 
   var wb=document.getElementById('wbox');
-  if(curUVI>=8&&skin.id<=2){wb.textContent='UV is '+uvBand(curUVI).label+' and your skin is very sensitive. Keep sessions under '+safe+' min.';wb.classList.remove('hidden');}
-  else if(curUVI<=1){wb.textContent='UV is very low right now — tanning will be minimal.';wb.classList.remove('hidden');}
+  if(curUVI>=7&&skin.id<=2){
+    wb.textContent='High altitude UV is intense for your skin type. Stick to early morning or late afternoon (shown below) and keep sessions to 5-10 min. Build slowly over days.';
+    wb.classList.remove('hidden');
+  } else if(curUVI<=1){wb.textContent='UV is very low right now \u2014 tanning will be minimal.';wb.classList.remove('hidden');}
   else wb.classList.add('hidden');
 
   var rows=document.getElementById('srows'); rows.innerHTML='';
@@ -316,8 +320,9 @@ function buildSched(){
     var lbl=h<12?h+' AM':h===12?'12 PM':(h-12)+' PM';
     var adv,ml;
     if(uvi<=0.3){adv='No UV \u2014 no tan';ml='\u2014';}
-    else if(sm<5){adv='Too intense \u2014 skip';ml='<'+sm+'m';}
-    else if(sm<15){adv='Very brief only';ml=sm+'m';}
+    else if(sm<=5&&skin.id<=2){adv='Golden hour \u2014 5 min max';ml='5m';}
+    else if(sm<=5){adv='Very brief only';ml='5m';}
+    else if(sm<15){adv='Short session';ml=sm+'m';}
     else if(sm<30){adv='Good window';ml=sm+'m';}
     else{adv='Safe window \u2014 enjoy!';ml=sm+'m';}
     var row=document.createElement('div'); row.className='srow';
