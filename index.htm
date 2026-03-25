@@ -1,1 +1,350 @@
 
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sun Timer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--sand:#f5ede0;--warm:#e8d5b7;--amber:#c8843a;--bronze:#a05c1e;--bark:#5c3310;--burn:#e05a2b;--safe:#5a9e6f;--text:#2a1a08;--muted:#8a6a4a}
+body{background:var(--sand);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:40px 20px 80px}
+.container{max-width:680px;width:100%}
+header{text-align:center;margin-bottom:40px}
+.sun-icon{width:60px;height:60px;margin:0 auto 14px;animation:spin 20s linear infinite}
+.sun-icon svg{width:100%;height:100%}
+@keyframes spin{to{transform:rotate(360deg)}}
+h1{font-family:'DM Serif Display',serif;font-size:clamp(2.2rem,6vw,3.4rem);color:var(--bark);line-height:1}
+h1 em{font-style:italic;color:var(--amber)}
+.sub{font-size:.7rem;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;margin-top:8px}
+.card{background:rgba(255,252,245,.9);border:1px solid rgba(200,132,58,.2);border-radius:16px;padding:24px 28px;margin-bottom:18px;box-shadow:0 2px 20px rgba(90,50,16,.06)}
+.clabel{font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+.row{display:flex;gap:10px}
+input{flex:1;background:var(--sand);border:1.5px solid var(--warm);border-radius:10px;padding:11px 15px;font-family:'DM Mono',monospace;font-size:.85rem;color:var(--text);outline:none}
+input:focus{border-color:var(--amber)}
+input::placeholder{color:var(--muted);opacity:.7}
+button{background:var(--amber);color:#fff;border:none;border-radius:10px;padding:11px 18px;font-family:'DM Mono',monospace;font-size:.8rem;cursor:pointer;white-space:nowrap}
+button:hover{background:var(--bronze)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.skin-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:4px}
+.skin-btn{aspect-ratio:1;border-radius:50%;border:3px solid transparent;cursor:pointer;padding:0;transition:transform .15s,box-shadow .15s}
+.skin-btn:hover{transform:scale(1.1)}
+.skin-btn.active{border-color:var(--bark);box-shadow:0 0 0 2px var(--sand),0 0 0 4px var(--bark);transform:scale(1.12)}
+.skin-info{margin-top:14px;font-size:.76rem;color:var(--muted);line-height:1.5;min-height:2.4em}
+.uv-disp{display:flex;align-items:center;gap:22px}
+.uv-num{font-family:'DM Serif Display',serif;font-size:4.8rem;line-height:1}
+.uv-right{flex:1}
+.uv-lv{font-size:1.05rem;font-weight:500;margin-bottom:3px}
+.uv-bar-bg{background:var(--warm);border-radius:99px;height:6px;margin-top:10px;overflow:hidden}
+.uv-bar{height:100%;border-radius:99px;transition:width 1s,background 1s}
+.rgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px}
+.rbox{background:var(--sand);border-radius:12px;padding:18px;text-align:center}
+.rbig{font-family:'DM Serif Display',serif;font-size:2.5rem;line-height:1}
+.rlbl{font-size:.62rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-top:5px}
+.wbox{background:rgba(224,90,43,.08);border:1px solid rgba(224,90,43,.25);border-radius:10px;padding:11px 15px;font-size:.76rem;color:var(--burn);margin-top:14px;line-height:1.5}
+.div{height:1px;background:linear-gradient(90deg,transparent,var(--warm),transparent);margin:14px 0}
+.srows{margin-top:6px}
+.srow{display:flex;align-items:center;padding:9px 0;border-bottom:1px solid var(--warm);font-size:.78rem;gap:10px}
+.srow:last-child{border-bottom:none}
+.st{color:var(--muted);width:76px;flex-shrink:0}
+.su{width:28px;text-align:center;font-weight:500}
+.sd{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sa{flex:1}
+.sm{font-weight:500;white-space:nowrap}
+.tips{margin-top:6px}
+.tip{display:flex;gap:9px;align-items:flex-start;padding:7px 0;font-size:.76rem;line-height:1.5;color:var(--muted);border-bottom:1px solid var(--warm)}
+.tip:last-child{border-bottom:none}
+.status{font-size:.76rem;color:var(--muted);margin-top:8px;min-height:1.1em}
+.hidden{display:none!important}
+.disc{text-align:center;font-size:.62rem;color:var(--muted);margin-top:28px;line-height:1.8;opacity:.75}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="sun-icon"><svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="12" fill="#f4c430"/><g stroke="#c8843a" stroke-width="2.5" stroke-linecap="round"><line x1="32" y1="4" x2="32" y2="12"/><line x1="32" y1="52" x2="32" y2="60"/><line x1="4" y1="32" x2="12" y2="32"/><line x1="52" y1="32" x2="60" y2="32"/><line x1="12.7" y1="12.7" x2="18.5" y2="18.5"/><line x1="45.5" y1="45.5" x2="51.3" y2="51.3"/><line x1="51.3" y1="12.7" x2="45.5" y2="18.5"/><line x1="18.5" y1="45.5" x2="12.7" y2="51.3"/></g></svg></div>
+    <h1>Sun <em>Timer</em></h1>
+    <p class="sub">Safe tanning without sunscreen</p>
+  </header>
+
+  <div class="card">
+    <div class="clabel">01 — Location</div>
+    <div class="row">
+      <input type="text" id="cityInput" placeholder="e.g. Snowmass, CO" />
+      <button id="goBtn" onclick="go()">Calculate</button>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="card">
+    <div class="clabel">02 — Your Skin Type (Fitzpatrick Scale)</div>
+    <div class="skin-grid" id="skinGrid"></div>
+    <div class="skin-info" id="skinInfo">Select your natural skin tone above.</div>
+  </div>
+
+  <div class="card hidden" id="uvCard">
+    <div class="clabel">Estimated UV Index — <span id="uvLoc"></span></div>
+    <div class="uv-disp">
+      <div class="uv-num" id="uvNum">—</div>
+      <div class="uv-right">
+        <div class="uv-lv" id="uvLv"></div>
+        <div style="font-size:.73rem;color:var(--muted)" id="uvDsc"></div>
+        <div class="uv-bar-bg"><div class="uv-bar" id="uvBar"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card hidden" id="schedCard">
+    <div class="clabel">Recommended Exposure</div>
+    <div class="rgrid">
+      <div class="rbox"><div class="rbig" id="safeM" style="color:var(--safe)">—</div><div class="rlbl">Safe max today</div></div>
+      <div class="rbox"><div class="rbig" id="burnM" style="color:var(--burn)">—</div><div class="rlbl">Burn threshold</div></div>
+    </div>
+    <div id="wbox" class="wbox hidden"></div>
+    <div class="div"></div>
+    <div class="clabel">Hourly Windows Today</div>
+    <div class="srows" id="srows"></div>
+  </div>
+
+  <div class="card hidden" id="tipsCard">
+    <div class="clabel">Tanning Tips</div>
+    <div class="tips" id="tipsList"></div>
+  </div>
+
+  <p class="disc">UV estimated from solar geometry, latitude, season &amp; elevation — no internet needed.<br>Not real-time weather data. Individual sensitivity varies. Always start with shorter sessions.</p>
+</div>
+
+<script>
+// ── Known locations database ──────────────────────────────────────────────
+// lat, lon, elevation(m), timezone offset (standard, hrs from UTC)
+var LOCS = {
+  "snowmass":         [39.208, -106.938, 2473, -7],
+  "aspen":            [39.191, -106.818, 2438, -7],
+  "denver":           [39.739, -104.984,  1609, -7],
+  "colorado springs": [38.833, -104.821, 1839, -7],
+  "boulder":          [40.015, -105.270, 1655, -7],
+  "vail":             [39.643, -106.374, 2476, -7],
+  "telluride":        [37.937, -107.812, 2667, -7],
+  "breckenridge":     [39.482, -106.048, 2926, -7],
+  "new york":         [40.713,  -74.006,    10, -5],
+  "los angeles":      [34.052, -118.244,    86, -8],
+  "chicago":          [41.878,  -87.630,  181, -6],
+  "miami":            [25.774,  -80.194,    2, -5],
+  "phoenix":          [33.449, -112.074,  331, -7],
+  "seattle":          [47.606, -122.332,   56, -8],
+  "san francisco":    [37.775, -122.419,   16, -8],
+  "dallas":           [32.777,  -96.797,  139, -6],
+  "atlanta":          [33.749,  -84.388,  320, -5],
+  "boston":           [42.360,  -71.059,    9, -5],
+  "las vegas":        [36.175, -115.136,  620, -8],
+  "salt lake city":   [40.761, -111.891, 1320, -7],
+  "albuquerque":      [35.085, -106.650, 1511, -7],
+  "tucson":           [32.222, -110.926,  728, -7],
+  "portland":         [45.523, -122.676,   15, -8],
+  "minneapolis":      [44.978,  -93.265,  260, -6],
+  "nashville":        [36.166,  -86.784,  182, -6],
+  "new orleans":      [29.951,  -90.072,    1, -6],
+  "honolulu":         [21.307, -157.858,    5,-10],
+  "anchorage":        [61.218, -149.900,   31, -9],
+};
+
+// ── Fitzpatrick skin types ────────────────────────────────────────────────
+var SKINS = [
+  {id:1,label:'Type I',  bg:'#f8dfc8',desc:'Very fair, always burns, never tans.',         med:200,sf:0.50,tips:['Start with just 5–10 min','Build very slowly over weeks','Best window: early morning']},
+  {id:2,label:'Type II', bg:'#f0c9a0',desc:'Fair, usually burns, sometimes tans.',         med:250,sf:0.55,tips:['10–15 min sessions to start','Avoid peak midday hours','Increase time gradually']},
+  {id:3,label:'Type III',bg:'#d4a070',desc:'Medium, sometimes burns, tans gradually.',     med:350,sf:0.65,tips:['20–30 min initial sessions OK','Moderate UV manageable','Rotate for even color']},
+  {id:4,label:'Type IV', bg:'#b07840',desc:'Olive/light brown, rarely burns, tans well.',  med:450,sf:0.75,tips:['30–45 min generally safe','Midday OK in moderation','Stay hydrated']},
+  {id:5,label:'Type V',  bg:'#7a4e28',desc:'Brown, very rarely burns.',                   med:600,sf:0.85,tips:['Extended sessions possible','UV still ages skin','Use SPF lip balm']},
+  {id:6,label:'Type VI', bg:'#3a2010',desc:'Dark brown/black, almost never burns.',        med:800,sf:0.90,tips:['Rarely burns but UV ages skin','Vitamin D still valuable','Gradual exposure beneficial']},
+];
+
+var UV_BANDS = [
+  {max:2,   label:'Low',       color:'#5a9e6f',desc:'Minimal risk for most people.'},
+  {max:5,   label:'Moderate',  color:'#d4a040',desc:'Fair skin burns in ~30 min.'},
+  {max:7,   label:'High',      color:'#c8683a',desc:'Seek shade near midday.'},
+  {max:10,  label:'Very High', color:'#b03020',desc:'Unprotected skin burns fast.'},
+  {max:9999,label:'Extreme',   color:'#7a1060',desc:'Avoid direct sun exposure.'},
+];
+
+var UVI_DOSE = 25; // J/m² per minute per UVI unit
+var skin = null, curUVI = null, curName = '', curHourly = [], curTimes = [];
+
+// ── Build skin selector ───────────────────────────────────────────────────
+(function(){
+  var g = document.getElementById('skinGrid');
+  SKINS.forEach(function(s){
+    var b = document.createElement('button');
+    b.className='skin-btn'; b.style.background=s.bg; b.title=s.label;
+    b.onclick=function(){pickSkin(s.id);};
+    g.appendChild(b);
+  });
+})();
+
+function pickSkin(id){
+  skin=SKINS.filter(function(s){return s.id===id;})[0];
+  document.querySelectorAll('.skin-btn').forEach(function(b,i){b.classList.toggle('active',SKINS[i].id===id);});
+  document.getElementById('skinInfo').textContent=skin.label+': '+skin.desc;
+  if(curUVI!==null) buildSched();
+}
+
+// ── Location lookup ───────────────────────────────────────────────────────
+function findLoc(input){
+  var q = input.toLowerCase().replace(/[,\.]/g,' ').replace(/\s+/g,' ').trim();
+  // Try exact key match
+  if(LOCS[q]) return {name:input, data:LOCS[q]};
+  // Try partial match (first word of input matches key start)
+  var keys = Object.keys(LOCS);
+  for(var i=0;i<keys.length;i++){
+    if(q.indexOf(keys[i])>=0 || keys[i].indexOf(q.split(' ')[0])>=0){
+      return {name:keys[i].replace(/\b\w/g,function(c){return c.toUpperCase();}), data:LOCS[keys[i]]};
+    }
+  }
+  return null;
+}
+
+// ── Solar UV estimation ───────────────────────────────────────────────────
+function estimateUVI(lat, elev, doy, solarHour){
+  // Solar declination
+  var decl = 23.45 * Math.sin((360/365*(doy-80)) * Math.PI/180);
+  var latR = lat * Math.PI/180;
+  var declR = decl * Math.PI/180;
+  // Hour angle (solar noon = 0)
+  var ha = (solarHour - 12) * 15; // degrees
+  var haR = ha * Math.PI/180;
+  // Solar elevation angle
+  var sinElev = Math.sin(latR)*Math.sin(declR) + Math.cos(latR)*Math.cos(declR)*Math.cos(haR);
+  var elevAngle = Math.asin(Math.max(0, sinElev)) * 180/Math.PI;
+  if(elevAngle <= 0) return 0;
+  // Air mass
+  var am = 1 / Math.max(0.01, Math.sin(elevAngle * Math.PI/180));
+  // Base UVI at sea level (empirical)
+  var baseUVI = 12 * Math.pow(Math.max(0, sinElev), 0.6);
+  // Elevation boost (~8% per 1000m)
+  var elevBoost = 1 + (elev/1000) * 0.08;
+  // Atmospheric attenuation
+  var atm = Math.exp(-0.09 * (am - 1));
+  return Math.min(16, baseUVI * elevBoost * atm);
+}
+
+// ── Main calculation ──────────────────────────────────────────────────────
+function go(){
+  var input = document.getElementById('cityInput').value.trim();
+  if(!input){setStatus('Enter a city name first.');return;}
+
+  var match = findLoc(input);
+  if(!match){
+    setStatus('City not in database. Try: Denver, Aspen, Snowmass, New York, Los Angeles, Miami, Phoenix, Seattle, Chicago, Las Vegas, Salt Lake City, Albuquerque, Boulder, Vail, Telluride...');
+    return;
+  }
+
+  var lat=match.data[0], lon=match.data[1], elev=match.data[2], tzOff=match.data[3];
+  curName = match.name;
+  document.getElementById('cityInput').value = curName;
+
+  var now = new Date();
+  // Adjust to local standard time for solar calculation
+  var utcH = now.getUTCHours() + now.getUTCMinutes()/60;
+  var localH = utcH + tzOff; // standard time hour
+  if(now.getTimezoneOffset() < -(tzOff*60 - 60)) localH += 1; // crude DST adjust
+  // Equation of time correction (longitude)
+  var lonCorr = (lon - tzOff*15) / 15;
+  var solarH = localH + lonCorr;
+
+  var doy = Math.floor((now - new Date(now.getFullYear(),0,0))/86400000);
+
+  // Current UVI
+  curUVI = estimateUVI(lat, elev, doy, solarH);
+  curUVI = Math.round(curUVI * 10) / 10;
+
+  // Hourly UVI for 6am–8pm
+  var td = now.toISOString().split('T')[0];
+  curTimes=[]; curHourly=[];
+  for(var h=6;h<=20;h++){
+    var sh = h + lonCorr;
+    curHourly.push(Math.round(estimateUVI(lat,elev,doy,sh)*10)/10);
+    curTimes.push(td+'T'+(h<10?'0':'')+h+':00');
+  }
+
+  var season = ['winter','winter','spring','spring','spring','summer','summer','summer','fall','fall','fall','winter'][now.getMonth()];
+  var note = curName+' — '+season+' UV at '+elev+'m elevation'+(elev>1500?' (high altitude — UV significantly elevated)':'');
+  setStatus('&#9729; '+note);
+  showUV();
+  if(skin) buildSched();
+  else setStatus('&#9729; '+note+' — Now select your skin type below.');
+}
+
+// ── Display ───────────────────────────────────────────────────────────────
+function uvBand(v){for(var i=0;i<UV_BANDS.length;i++){if(v<=UV_BANDS[i].max)return UV_BANDS[i];}return UV_BANDS[UV_BANDS.length-1];}
+
+function showUV(){
+  var b=uvBand(curUVI);
+  document.getElementById('uvNum').textContent=curUVI.toFixed(1);
+  document.getElementById('uvNum').style.color=b.color;
+  document.getElementById('uvLv').textContent=b.label; document.getElementById('uvLv').style.color=b.color;
+  document.getElementById('uvDsc').textContent=b.desc;
+  document.getElementById('uvLoc').textContent=curName;
+  var bar=document.getElementById('uvBar');
+  bar.style.width=Math.min(100,(curUVI/12)*100)+'%'; bar.style.background=b.color;
+  document.getElementById('uvCard').classList.remove('hidden');
+}
+
+function safeMin(uvi,sk){
+  if(!sk||uvi<=0)return Infinity;
+  return Math.round((sk.med/(uvi*UVI_DOSE))*sk.sf);
+}
+
+function buildSched(){
+  if(!skin||curUVI===null)return;
+  var safe=safeMin(curUVI,skin);
+  var burn=Math.round(skin.med/((curUVI*UVI_DOSE)||1));
+  document.getElementById('safeM').textContent=safe===Infinity?'\u221e':safe+'m';
+  document.getElementById('burnM').textContent=curUVI<=0?'\u2014':burn+'m';
+
+  var wb=document.getElementById('wbox');
+  if(curUVI>=8&&skin.id<=2){wb.textContent='UV is '+uvBand(curUVI).label+' and your skin is very sensitive. Keep sessions under '+safe+' min.';wb.classList.remove('hidden');}
+  else if(curUVI<=1){wb.textContent='UV is very low right now — tanning will be minimal.';wb.classList.remove('hidden');}
+  else wb.classList.add('hidden');
+
+  var rows=document.getElementById('srows'); rows.innerHTML='';
+  var nowH=new Date().getHours();
+  curTimes.forEach(function(t,i){
+    var h=parseInt(t.split('T')[1]);
+    var uvi=curHourly[i]||0;
+    var sm=safeMin(uvi,skin); var b=uvBand(uvi);
+    var lbl=h<12?h+' AM':h===12?'12 PM':(h-12)+' PM';
+    var adv,ml;
+    if(uvi<=0.3){adv='No UV \u2014 no tan';ml='\u2014';}
+    else if(sm<5){adv='Too intense \u2014 skip';ml='<'+sm+'m';}
+    else if(sm<15){adv='Very brief only';ml=sm+'m';}
+    else if(sm<30){adv='Good window';ml=sm+'m';}
+    else{adv='Safe window \u2014 enjoy!';ml=sm+'m';}
+    var row=document.createElement('div'); row.className='srow';
+    if(h<nowH)row.style.opacity='0.35';
+    row.innerHTML='<span class="st">'+(h===nowH?'\u25b6 ':'')+lbl+'</span>'
+      +'<span class="su" style="color:'+b.color+'">'+uvi.toFixed(1)+'</span>'
+      +'<span class="sd" style="background:'+b.color+'"></span>'
+      +'<span class="sa">'+adv+'</span>'
+      +'<span class="sm" style="color:'+b.color+'">'+ml+'</span>';
+    rows.appendChild(row);
+  });
+
+  var tl=document.getElementById('tipsList'); tl.innerHTML='';
+  skin.tips.concat(['Drink water before, during, and after.','Rotate position every few minutes for even color.','Wear UV-blocking sunglasses — eyelids burn easily.','Build a base tan gradually over 1–2 weeks.']).forEach(function(t,i){
+    var el=document.createElement('div'); el.className='tip';
+    var icons=['&#9728;&#65039;','&#9728;&#65039;','&#9728;&#65039;','&#128167;','&#128260;','&#128065;&#65039;','&#128197;'];
+    el.innerHTML='<span style="flex-shrink:0">'+icons[i]+'</span><span>'+t+'</span>';
+    tl.appendChild(el);
+  });
+
+  document.getElementById('schedCard').classList.remove('hidden');
+  document.getElementById('tipsCard').classList.remove('hidden');
+}
+
+function setStatus(msg){document.getElementById('status').innerHTML=msg;}
+document.getElementById('cityInput').addEventListener('keydown',function(e){if(e.key==='Enter')go();});
+</script>
+
+</body>
+</html>
